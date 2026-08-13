@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+html { background:#fff7f9; }
+body { margin:0; color:#35151f; background:#fff; font-family:Arial, Helvetica, sans-serif; letter-spacing:0; }
+button, input, select, textarea { font:inherit; }
+button { -webkit-tap-highlight-color:transparent; }
+.hide-scroll::-webkit-scrollbar { display:none; }
+.hide-scroll { scrollbar-width:none; }
+.page { width:100%; max-width:1180px; margin:0 auto; padding:20px 18px 130px; }
+.pill { border-radius:999px; }
+.card { border:1px solid #f6e5e9; border-radius:8px; background:#fff; box-shadow:0 10px 30px rgba(92,18,41,.07); }
+.section-title { font-size:1.3rem; font-weight:800; letter-spacing:0; }
+.input { width:100%; border:1px solid #ead9de; border-radius:8px; padding:13px 14px; outline:none; background:#fff; }
+.input:focus { border-color:#f22e62; box-shadow:0 0 0 3px #ffe4ea; }
+.label { display:block; margin-bottom:6px; font-size:11px; font-weight:800; text-transform:uppercase; color:#71717a; }
+@media (min-width:768px) { .page { padding:28px 32px 110px; } }
