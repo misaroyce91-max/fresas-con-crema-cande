@@ -178,16 +178,49 @@ as $$
 declare v_level uuid;
 begin
   select id into v_level from public.customer_levels order by min_lifetime_points limit 1;
-  if coalesce(new.raw_app_meta_data ->> 'role', 'CUSTOMER') = 'CUSTOMER' then
+  if coalesce(new.raw_app_meta_data ->> 'role', 'CLIENT') in ('CLIENT', 'CUSTOMER') then
     insert into public.customers(id, name, phone, level_id)
     values (
       new.id,
       trim(coalesce(new.raw_user_meta_data ->> 'name', 'Cliente Cande')),
       regexp_replace(coalesce(new.phone, new.raw_user_meta_data ->> 'phone', ''), '[^0-9+]', '', 'g'),
       v_level
-    );
+    ) on conflict (id) do nothing;
   end if;
   return new;
+end $$;
+
+create or replace function private.ensure_customer_profile(p_user uuid)
+returns public.customers language plpgsql security definer set search_path = ''
+as $$
+declare
+  v_auth auth.users;
+  v_customer public.customers;
+  v_level uuid;
+  v_role text;
+begin
+  if p_user is null or p_user <> auth.uid() then raise exception 'AUTH_REQUIRED'; end if;
+
+  select * into v_customer from public.customers where id=p_user;
+  if found then return v_customer; end if;
+
+  select * into v_auth from auth.users where id=p_user;
+  if not found then raise exception 'SESSION_INVALID'; end if;
+  v_role := coalesce(v_auth.raw_app_meta_data ->> 'role', 'CLIENT');
+  if v_role not in ('CLIENT', 'CUSTOMER') then raise exception 'CUSTOMER_ROLE_REQUIRED'; end if;
+
+  select id into v_level from public.customer_levels order by min_lifetime_points, sort_order limit 1;
+  insert into public.customers(id,name,phone,level_id)
+  values(
+    v_auth.id,
+    trim(coalesce(nullif(v_auth.raw_user_meta_data ->> 'name',''),'Cliente Cande')),
+    regexp_replace(coalesce(v_auth.phone,v_auth.raw_user_meta_data ->> 'phone',''),'[^0-9+]','','g'),
+    v_level
+  ) on conflict (id) do nothing;
+
+  select * into v_customer from public.customers where id=p_user;
+  if not found then raise exception 'CUSTOMER_PROFILE_CREATE_FAILED'; end if;
+  return v_customer;
 end $$;
 
 create trigger on_auth_user_created
@@ -229,8 +262,8 @@ begin
   if p_payment_method not in ('Efectivo','Transferencia / SPEI') then raise exception 'INVALID_PAYMENT_METHOD'; end if;
   if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then raise exception 'EMPTY_ORDER'; end if;
 
+  v_customer := private.ensure_customer_profile(v_user);
   select * into v_customer from public.customers where id = v_user for update;
-  if not found then raise exception 'CUSTOMER_NOT_FOUND'; end if;
 
   select * into v_existing from public.orders where client_request_id = p_client_request_id;
   if found then
@@ -363,6 +396,7 @@ grant insert,update,delete on public.customers,public.orders,public.order_items,
 revoke all on function public.place_order(uuid,jsonb,text,jsonb,text,text,text) from public,anon;
 revoke all on function public.redeem_reward(uuid) from public,anon;
 revoke all on function private.place_order_impl(uuid,jsonb,text,jsonb,text,text,text) from public,anon;
+revoke all on function private.ensure_customer_profile(uuid) from public,anon,authenticated;
 revoke all on function private.redeem_reward_impl(uuid) from public,anon;
 grant execute on function public.place_order(uuid,jsonb,text,jsonb,text,text,text) to authenticated;
 grant execute on function public.redeem_reward(uuid) to authenticated;
