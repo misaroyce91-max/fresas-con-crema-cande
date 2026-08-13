@@ -5,6 +5,8 @@ import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Check, Copy, LocateFixed, MapPin, MessageCircle, Store } from 'lucide-react'
 import { useCart } from '@/components/cart-provider'
 import { useStore } from '@/components/store-provider'
+import { useAuth } from '@/components/auth-provider'
+import { supabase } from '@/lib/supabase'
 import { money } from '@/lib/data'
 
 type DeliveryType = 'delivery' | 'pickup'
@@ -15,9 +17,10 @@ const BUSINESS_WHATSAPP = '527222219560'
 export default function Checkout() {
   const { items, subtotal, clear } = useCart()
   const { config } = useStore()
+  const { user, profile, refreshProfile } = useAuth()
   const [type, setType] = useState<DeliveryType>('delivery')
   const [payment, setPayment] = useState('Efectivo')
-  const [name, setName] = useState('Mariana Cruz')
+  const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
   const [references, setReferences] = useState('')
@@ -27,10 +30,18 @@ export default function Checkout() {
   const [done, setDone] = useState(false)
   const [confirmedMessage, setConfirmedMessage] = useState('')
   const [orderId, setOrderId] = useState('CAN-PENDIENTE')
+  const [requestId, setRequestId] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [confirmedTotal, setConfirmedTotal] = useState(0)
+  const [confirmedPoints, setConfirmedPoints] = useState(0)
 
   useEffect(() => {
-    setOrderId(`CAN-${Math.floor(1000 + Math.random() * 9000)}`)
+    setRequestId(crypto.randomUUID())
   }, [])
+
+  useEffect(() => {
+    if (profile) { setName(profile.name); setPhone(profile.phone) }
+  }, [profile])
 
   const shipping = type === 'delivery' ? config.shippingFee : 0
   const discount = 0
@@ -101,56 +112,40 @@ export default function Checkout() {
     )
   }
 
-  function saveOrder() {
-    const order = {
-      orderId,
-      customer: { name, phone },
-      delivery: {
-        type,
-        address: type === 'delivery' ? address : '',
-        references,
-        coordinates,
-        mapsUrl: mapsUrl || null,
-      },
-      notes,
-      payment,
-      subtotal,
-      shipping,
-      discount,
-      total,
-      points,
-      date: new Date().toISOString(),
-      status: 'Recibido',
-      items,
-    }
-
-    const previousOrders = JSON.parse(localStorage.getItem('cande-orders') || '[]')
-    localStorage.setItem('cande-orders', JSON.stringify([order, ...previousOrders]))
-    localStorage.setItem('cande-last-order', JSON.stringify(order))
-
-    const currentPoints = Number(localStorage.getItem('cande-points') || '184')
-    localStorage.setItem('cande-points', String(currentPoints + points))
-
-    const stats = JSON.parse(localStorage.getItem('cande-stats') || '{"sales":0,"orders":0,"points":0}')
-    localStorage.setItem('cande-stats', JSON.stringify({
-      sales: Number(stats.sales || 0) + total,
-      orders: Number(stats.orders || 0) + 1,
-      points: Number(stats.points || 0) + points,
-    }))
-  }
-
   function openWhatsApp(text = confirmedMessage || message) {
     window.location.href = `https://wa.me/${BUSINESS_WHATSAPP}?text=${encodeURIComponent(text)}`
   }
 
-  function submit(event: FormEvent) {
+  async function submit(event: FormEvent) {
     event.preventDefault()
-    const finalMessage = message
-    saveOrder()
+    if (!user) { window.location.href='/account?next=/checkout'; return }
+    if (!supabase || !requestId || saving) return
+    setSaving(true)
+    const { data, error } = await supabase.rpc('place_order', {
+      p_client_request_id: requestId,
+      p_items: items.map(item=>({productId:item.productId,size:item.size,quantity:item.quantity,toppingNames:item.toppings.map(t=>t.name)})),
+      p_delivery_type: type,
+      p_address: type==='delivery'?{address,coordinates,mapsUrl:mapsUrl||null}:null,
+      p_references: references,
+      p_notes: notes,
+      p_payment_method: payment,
+    })
+    setSaving(false)
+    if(error){alert(`No pudimos guardar el pedido: ${error.message}`);return}
+    const saved=data as any
+    const savedOrderId=`CAN-${String(saved.orderNumber).padStart(6,'0')}`
+    const finalMessage=message
+      .replace(`Pedido: ${orderId}`,`Pedido: ${savedOrderId}`)
+      .replace(`Subtotal: ${money(subtotal)}`,`Subtotal: ${money(Number(saved.subtotal))}`)
+      .replace(`Envío: ${money(shipping)}`,`Envío: ${money(Number(saved.deliveryFee))}`)
+      .replace(`Total: ${money(total)}`,`Total: ${money(Number(saved.total))}`)
+      .replace(`Puntos ganados: ${points} pts`,`Puntos ganados: ${saved.pointsEarned} pts`)
+    setOrderId(savedOrderId)
+    setConfirmedTotal(Number(saved.total));setConfirmedPoints(Number(saved.pointsEarned))
     setConfirmedMessage(finalMessage)
     setDone(true)
     clear()
-    // Assigning the location from the user's submit gesture works reliably on Android.
+    await refreshProfile()
     openWhatsApp(finalMessage)
   }
 
@@ -160,8 +155,8 @@ export default function Checkout() {
     <p className="mt-2 text-zinc-500">Sumamos tus puntos y abrimos WhatsApp con el pedido listo.</p>
     <section className="card mt-7 p-6 text-left">
       <p className="text-xs font-bold uppercase text-cande-500">Pedido {orderId}</p>
-      <div className="mt-4 flex justify-between"><span>Total</span><strong>{money(total)}</strong></div>
-      <div className="mt-3 flex justify-between"><span>Puntos ganados</span><strong className="text-cande-600">+{points} pts</strong></div>
+      <div className="mt-4 flex justify-between"><span>Total</span><strong>{money(confirmedTotal)}</strong></div>
+      <div className="mt-3 flex justify-between"><span>Puntos ganados</span><strong className="text-cande-600">+{confirmedPoints} pts</strong></div>
       <div className="mt-4 rounded-md bg-cande-50 p-4 text-sm">
         <strong className="block text-cande-900">📍 Ubicación de entrega</strong>
         {mapsUrl ? <a href={mapsUrl} target="_blank" rel="noreferrer" className="mt-1 block break-all font-bold text-cande-600">Abrir en Google Maps</a> : <p className="mt-1 text-zinc-600">Ubicación no compartida — solicitar por WhatsApp.</p>}
@@ -181,11 +176,12 @@ export default function Checkout() {
     </header>
 
     <form onSubmit={submit} className="mt-7 space-y-6">
+      {!user&&<section className="rounded-lg border-2 border-cande-500 bg-cande-50 p-5"><h2 className="font-black text-cande-900">Crea tu cuenta para acumular puntos</h2><p className="mt-2 text-sm text-zinc-600">Guardaremos este pedido, tus puntos y tu historial para que puedas consultarlos desde cualquier celular.</p><Link href="/account?next=/checkout" className="mt-4 inline-flex rounded-full bg-cande-500 px-5 py-3 text-sm font-bold text-white">Entrar o registrarme</Link></section>}
       <section className="card p-5">
         <h2 className="font-extrabold">Tus datos</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <input required className="input" placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
-          <input required className="input" type="tel" inputMode="tel" placeholder="Teléfono" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <input required readOnly={Boolean(profile)} className="input read-only:bg-zinc-50" placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
+          <input required readOnly={Boolean(profile)} className="input read-only:bg-zinc-50" type="tel" inputMode="tel" placeholder="Teléfono" value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
       </section>
 
@@ -233,8 +229,8 @@ export default function Checkout() {
         <div className="mt-4 flex justify-between border-t pt-4 text-lg"><strong>Total</strong><strong className="text-cande-700">{money(total)}</strong></div>
       </section>
 
-      <button disabled={!items.length} className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-5 font-bold text-white disabled:opacity-40">
-        <MessageCircle size={20} /> Enviar pedido por WhatsApp
+      <button disabled={!items.length||saving} className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-5 font-bold text-white disabled:opacity-40">
+        <MessageCircle size={20} /> {saving?'Guardando pedido…':user?'Enviar pedido por WhatsApp':'Crear cuenta para continuar'}
       </button>
       <p className="text-center text-xs text-zinc-500">Primero guardaremos tu pedido y tus puntos. Después abriremos WhatsApp.</p>
     </form>
