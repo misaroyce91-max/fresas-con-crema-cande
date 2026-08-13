@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Check, Copy, LocateFixed, MapPin, MessageCircle, Store } from 'lucide-react'
 import { useCart } from '@/components/cart-provider'
 import { useStore } from '@/components/store-provider'
@@ -26,7 +26,11 @@ export default function Checkout() {
   const [locationState, setLocationState] = useState<LocationState>('idle')
   const [done, setDone] = useState(false)
   const [confirmedMessage, setConfirmedMessage] = useState('')
-  const [orderId] = useState(() => `CAN-${Math.floor(1000 + Math.random() * 9000)}`)
+  const [orderId, setOrderId] = useState('CAN-PENDIENTE')
+
+  useEffect(() => {
+    setOrderId(`CAN-${Math.floor(1000 + Math.random() * 9000)}`)
+  }, [])
 
   const shipping = type === 'delivery' ? config.shippingFee : 0
   const discount = 0
