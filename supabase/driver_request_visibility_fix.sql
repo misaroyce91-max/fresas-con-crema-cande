@@ -21,8 +21,7 @@ as $$
 $$;
 create or replace function public.driver_available_requests()
 returns table(id uuid,order_id uuid,pay numeric,pickup_address text,status text,order_number bigint,delivery_address text,maps_url text)
-language sql security invoker set search_path=''
+language sql security definer set search_path=''
 as $$select * from private.driver_available_requests_impl()$$;
 revoke all on function public.driver_available_requests(),private.driver_available_requests_impl() from public,anon;
 grant execute on function public.driver_available_requests() to authenticated;
-grant execute on function private.driver_available_requests_impl() to authenticated;
