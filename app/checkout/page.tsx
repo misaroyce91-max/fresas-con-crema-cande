@@ -59,7 +59,7 @@ export default function Checkout() {
     }).join('\n\n')
 
     return [
-      '🍓 NUEVO PEDIDO - FRESAS CON CREMA CANDE',
+      '\u{1F353} NUEVO PEDIDO - FRESAS CON CREMA CANDE',
       `Pedido: ${orderId}`,
       '',
       `Cliente: ${name}`,
@@ -82,7 +82,7 @@ export default function Checkout() {
       'Referencias:',
       references || 'Sin referencias',
       '',
-      '📍 Ubicación:',
+      '\u{1F4CD} Ubicación:',
       mapsUrl || 'Ubicación no compartida — solicitar por WhatsApp',
       '',
       'Notas:',
