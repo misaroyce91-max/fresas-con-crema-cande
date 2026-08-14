@@ -15,7 +15,7 @@ type LocationState = 'idle' | 'loading' | 'shared' | 'denied' | 'unavailable'
 const BUSINESS_WHATSAPP = '527222219560'
 
 export default function Checkout() {
-  const { items, subtotal, clear } = useCart()
+  const { items, redemptions, subtotal, rewardDiscount, clear } = useCart()
   const { config } = useStore()
   const { user, profile, refreshProfile } = useAuth()
   const [type, setType] = useState<DeliveryType>('delivery')
@@ -44,9 +44,9 @@ export default function Checkout() {
   }, [profile])
 
   const shipping = type === 'delivery' ? config.shippingFee : 0
-  const discount = 0
+  const discount = Math.min(subtotal, rewardDiscount)
   const total = subtotal + shipping - discount
-  const points = Math.floor(subtotal * config.pointsPerPeso)
+  const points = Math.floor(total * config.pointsPerPeso)
   const mapsUrl = coordinates
     ? `https://www.google.com/maps?q=${coordinates.latitude},${coordinates.longitude}`
     : ''
@@ -88,7 +88,7 @@ export default function Checkout() {
       'Notas:',
       notes || 'Sin notas',
       '',
-      `Puntos ganados: ${points} pts`,
+      `Fresas Cande al completar el pedido: ${points} 🍓`,
     ].join('\n')
   }, [address, discount, items, mapsUrl, name, notes, orderId, payment, phone, points, references, shipping, subtotal, total, type])
 
@@ -123,7 +123,8 @@ export default function Checkout() {
     setSaving(true)
     const { data, error } = await supabase.rpc('place_order', {
       p_client_request_id: requestId,
-      p_items: items.map(item=>({productId:item.productId,size:item.size,quantity:item.quantity,toppingNames:item.toppings.map(t=>t.name)})),
+      p_items: items.map(item=>({productId:item.productId,size:item.size,quantity:item.quantity,toppingNames:item.toppings.map(t=>t.name),redemptionId:item.redemptionId||null})),
+      p_redemption_ids: redemptions.map(redemption=>redemption.id),
       p_delivery_type: type,
       p_address: type==='delivery'?{address,coordinates,mapsUrl:mapsUrl||null}:null,
       p_references: references,
@@ -139,9 +140,9 @@ export default function Checkout() {
       .replace(`Subtotal: ${money(subtotal)}`,`Subtotal: ${money(Number(saved.subtotal))}`)
       .replace(`Envío: ${money(shipping)}`,`Envío: ${money(Number(saved.deliveryFee))}`)
       .replace(`Total: ${money(total)}`,`Total: ${money(Number(saved.total))}`)
-      .replace(`Puntos ganados: ${points} pts`,`Puntos ganados: ${saved.pointsEarned} pts`)
+      .replace(`Fresas Cande al completar el pedido: ${points} 🍓`,`Fresas Cande al completar el pedido: ${saved.strawberriesPending} 🍓`)
     setOrderId(savedOrderId)
-    setConfirmedTotal(Number(saved.total));setConfirmedPoints(Number(saved.pointsEarned))
+    setConfirmedTotal(Number(saved.total));setConfirmedPoints(Number(saved.strawberriesPending))
     setConfirmedMessage(finalMessage)
     setDone(true)
     clear()
@@ -152,11 +153,11 @@ export default function Checkout() {
   if (done) return <main className="page max-w-xl text-center">
     <div className="mx-auto mt-12 grid h-20 w-20 place-items-center rounded-full bg-green-100 text-green-700"><Check size={38} /></div>
     <h1 className="mt-6 text-3xl font-black">¡Pedido guardado! 🍓</h1>
-    <p className="mt-2 text-zinc-500">Sumamos tus puntos y abrimos WhatsApp con el pedido listo.</p>
+    <p className="mt-2 text-zinc-500">Tu pedido quedó registrado. Tus Fresas Cande se acreditarán al pagarlo o completarlo.</p>
     <section className="card mt-7 p-6 text-left">
       <p className="text-xs font-bold uppercase text-cande-500">Pedido {orderId}</p>
       <div className="mt-4 flex justify-between"><span>Total</span><strong>{money(confirmedTotal)}</strong></div>
-      <div className="mt-3 flex justify-between"><span>Puntos ganados</span><strong className="text-cande-600">+{confirmedPoints} pts</strong></div>
+      <div className="mt-3 flex justify-between"><span>Fresas al completar</span><strong className="text-cande-600">+{confirmedPoints} 🍓</strong></div>
       <div className="mt-4 rounded-md bg-cande-50 p-4 text-sm">
         <strong className="block text-cande-900">📍 Ubicación de entrega</strong>
         {mapsUrl ? <a href={mapsUrl} target="_blank" rel="noreferrer" className="mt-1 block break-all font-bold text-cande-600">Abrir en Google Maps</a> : <p className="mt-1 text-zinc-600">Ubicación no compartida — solicitar por WhatsApp.</p>}
@@ -176,7 +177,7 @@ export default function Checkout() {
     </header>
 
     <form onSubmit={submit} className="mt-7 space-y-6">
-      {!user&&<section className="rounded-lg border-2 border-cande-500 bg-cande-50 p-5"><h2 className="font-black text-cande-900">Crea tu cuenta para acumular puntos</h2><p className="mt-2 text-sm text-zinc-600">Guardaremos este pedido, tus puntos y tu historial para que puedas consultarlos desde cualquier celular.</p><Link href="/account?next=/checkout" className="mt-4 inline-flex rounded-full bg-cande-500 px-5 py-3 text-sm font-bold text-white">Entrar o registrarme</Link></section>}
+      {!user&&<section className="rounded-lg border-2 border-cande-500 bg-cande-50 p-5"><h2 className="font-black text-cande-900">Crea tu cuenta para acumular Fresas Cande</h2><p className="mt-2 text-sm text-zinc-600">Guardaremos este pedido, tus 🍓 y tu historial para que puedas consultarlos desde cualquier celular.</p><Link href="/account?next=/checkout" className="mt-4 inline-flex rounded-full bg-cande-500 px-5 py-3 text-sm font-bold text-white">Entrar o registrarme</Link></section>}
       <section className="card p-5">
         <h2 className="font-extrabold">Tus datos</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -232,7 +233,7 @@ export default function Checkout() {
       <button disabled={!items.length||saving} className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-5 font-bold text-white disabled:opacity-40">
         <MessageCircle size={20} /> {saving?'Guardando pedido…':user?'Enviar pedido por WhatsApp':'Crear cuenta para continuar'}
       </button>
-      <p className="text-center text-xs text-zinc-500">Primero guardaremos tu pedido y tus puntos. Después abriremos WhatsApp.</p>
+      <p className="text-center text-xs text-zinc-500">Primero guardaremos tu pedido. Las Fresas Cande se acreditan al pagarlo o completarlo; después abriremos WhatsApp.</p>
     </form>
   </main>
 }
