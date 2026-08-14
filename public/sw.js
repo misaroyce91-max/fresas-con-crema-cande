@@ -1,4 +1,4 @@
-const CACHE='cande-app-v4';
+const CACHE='cande-app-v5';
 const SHELL=['/','/driver','/manifest.webmanifest','/driver-manifest.webmanifest','/icons/cande-driver-192.png','/icons/cande-driver-512.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
