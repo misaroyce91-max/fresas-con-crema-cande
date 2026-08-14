@@ -22,19 +22,24 @@ function isIosDevice() {
     || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 }
 
+function isAndroidDevice() {
+  return /Android/i.test(navigator.userAgent)
+}
+
 export function InstallCande() {
   const path = usePathname()
   const [installEvent, setInstallEvent] = useState<InstallEvent | null>(null)
   const [eligible, setEligible] = useState(false)
-  const [ios, setIos] = useState(false)
+  const [platform, setPlatform] = useState<'ios' | 'android' | null>(null)
   const [showIosHelp, setShowIosHelp] = useState(false)
 
   useEffect(() => {
     const dismissedAt = Number(localStorage.getItem(DISMISSED_KEY) || 0)
     const dismissedRecently = Date.now() - dismissedAt < DISMISS_FOR_MS
     const iosDevice = isIosDevice()
-    setIos(iosDevice)
-    if (!isStandalone() && !dismissedRecently && iosDevice) setEligible(true)
+    const androidDevice = isAndroidDevice()
+    setPlatform(iosDevice ? 'ios' : androidDevice ? 'android' : null)
+    if (!isStandalone() && !dismissedRecently && (iosDevice || androidDevice)) setEligible(true)
 
     const ready = (event: Event) => {
       event.preventDefault()
@@ -83,13 +88,13 @@ export function InstallCande() {
       <div><h2 className="text-lg font-black text-cande-900">🍓 ¡Ten Fresas Cande en tu celular!</h2><p className="mt-2 text-sm leading-relaxed text-zinc-700">Instala nuestra app para pedir más rápido, consultar tus 🍓 Fresas Cande, recompensas y promociones.</p></div>
     </div>
     {showIosHelp ? <div className="p-5 pt-4">
-      <h3 className="flex items-center gap-2 font-black"><Share2 size={18} className="text-cande-600" />Para instalar en iPhone</h3>
-      <ol className="mt-3 space-y-2 text-sm text-zinc-700"><li>1. Abre esta página en Safari.</li><li>2. Toca Compartir.</li><li>3. Selecciona Agregar a pantalla de inicio.</li><li>4. Toca Agregar.</li></ol>
+      <h3 className="flex items-center gap-2 font-black"><Share2 size={18} className="text-cande-600" />Para instalar en {platform === 'ios' ? 'iPhone' : 'Android'}</h3>
+      {platform === 'ios' ? <ol className="mt-3 space-y-2 text-sm text-zinc-700"><li>1. Abre esta página en Safari.</li><li>2. Toca Compartir.</li><li>3. Selecciona Agregar a pantalla de inicio.</li><li>4. Toca Agregar.</li></ol> : <ol className="mt-3 space-y-2 text-sm text-zinc-700"><li>1. Abre el menú ⋮ de Chrome.</li><li>2. Toca Instalar aplicación o Agregar a pantalla principal.</li><li>3. Confirma con Instalar.</li></ol>}
       <button onClick={() => setShowIosHelp(false)} className="mt-4 h-11 w-full rounded-full border border-cande-300 font-bold text-cande-700">Entendido</button>
     </div> : <div className="grid gap-2 p-4">
       <button onClick={install} className="flex h-13 items-center justify-center gap-2 rounded-full bg-cande-500 py-3 font-black text-white shadow-lg shadow-cande-200"><Download size={19} />📲 INSTALAR APP</button>
       <button onClick={dismiss} className="h-10 text-sm font-bold text-zinc-500">Ahora no</button>
-      {ios && <p className="text-center text-[11px] text-zinc-500">En iPhone te mostraremos los pasos para agregarla.</p>}
+      {platform === 'ios' && <p className="text-center text-[11px] text-zinc-500">En iPhone te mostraremos los pasos para agregarla.</p>}
     </div>}
   </aside>
 }
