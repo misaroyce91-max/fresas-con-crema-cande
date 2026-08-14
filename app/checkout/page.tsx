@@ -8,6 +8,7 @@ import { useStore } from '@/components/store-provider'
 import { useAuth } from '@/components/auth-provider'
 import { supabase } from '@/lib/supabase'
 import { money } from '@/lib/data'
+import { orderTotal } from '@/lib/pricing'
 
 type DeliveryType = 'delivery' | 'pickup'
 type LocationState = 'idle' | 'loading' | 'shared' | 'denied' | 'unavailable'
@@ -45,7 +46,7 @@ export default function Checkout() {
 
   const shipping = type === 'delivery' ? config.shippingFee : 0
   const discount = Math.min(subtotal, rewardDiscount)
-  const total = subtotal + shipping - discount
+  const total = orderTotal(subtotal, shipping, discount)
   const points = Math.floor(total * config.pointsPerPeso)
   const mapsUrl = coordinates
     ? `https://www.google.com/maps?q=${coordinates.latitude},${coordinates.longitude}`
@@ -123,7 +124,7 @@ export default function Checkout() {
     setSaving(true)
     const { data, error } = await supabase.rpc('place_order', {
       p_client_request_id: requestId,
-      p_items: items.map(item=>({productId:item.productId,size:item.size,quantity:item.quantity,toppingNames:item.toppings.map(t=>t.name),redemptionId:item.redemptionId||null})),
+      p_items: items.map(item=>({productId:item.productId,size:item.size,quantity:item.quantity,toppingIds:item.toppings.map(t=>t.id).filter(Boolean),toppingNames:item.toppings.map(t=>t.name),redemptionId:item.redemptionId||null})),
       p_redemption_ids: redemptions.map(redemption=>redemption.id),
       p_delivery_type: type,
       p_address: type==='delivery'?{address,coordinates,mapsUrl:mapsUrl||null}:null,
@@ -139,6 +140,7 @@ export default function Checkout() {
       .replace(`Pedido: ${orderId}`,`Pedido: ${savedOrderId}`)
       .replace(`Subtotal: ${money(subtotal)}`,`Subtotal: ${money(Number(saved.subtotal))}`)
       .replace(`Envío: ${money(shipping)}`,`Envío: ${money(Number(saved.deliveryFee))}`)
+      .replace(`Descuento: ${money(discount)}`,`Descuento: ${money(Number(saved.discount))}`)
       .replace(`Total: ${money(total)}`,`Total: ${money(Number(saved.total))}`)
       .replace(`Fresas Cande al completar el pedido: ${points} 🍓`,`Fresas Cande al completar el pedido: ${saved.strawberriesPending} 🍓`)
     setOrderId(savedOrderId)
