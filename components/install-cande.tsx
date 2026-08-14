@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { usePathname } from 'next/navigation'
 import { Download, Share2, Smartphone, X } from 'lucide-react'
 
@@ -58,35 +57,15 @@ function Instructions({ platform, close }: { platform: Platform; close: () => vo
   </div>
 }
 
-export function InstallCandeCard() {
+export function InstallCandeCard({ accountOnly = false }: { accountOnly?: boolean }) {
   const path = usePathname()
   const { installed, platform, showHelp, setShowHelp, install } = useInstallState()
-  const [target, setTarget] = useState<HTMLElement | null>(null)
-  useEffect(() => {
-    if (path !== '/' && path !== '/account') return
-    let host: HTMLDivElement | null = null
-    const place = () => {
-      if (host) return
-      const container = path === '/'
-        ? document.querySelector('main.page > section.card.relative')
-        : document.querySelector('main.page')
-      if (!container) return
-      host = document.createElement('div')
-      if (path === '/') container.after(host)
-      else container.append(host)
-      setTarget(host)
-    }
-    const observer = new MutationObserver(place)
-    place()
-    observer.observe(document.body, { childList: true, subtree: true })
-    return () => { observer.disconnect(); host?.remove(); setTarget(null) }
-  }, [path])
-  if (installed || !target || (path !== '/' && path !== '/account')) return null
-  return createPortal(<section className="card mt-5 border border-cande-200 bg-cande-50 p-5" aria-label="Instalar Fresas Cande">
-    <div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-cande-500 text-white"><Smartphone size={21} /></span><div><h2 className="text-lg font-black text-cande-900">📲 Instala Fresas Cande</h2><p className="mt-1 text-sm leading-relaxed text-zinc-700">Ten Fresas Cande en tu celular para pedir más rápido, consultar tus 🍓, promociones y recompensas.</p></div></div>
+  if (installed || (accountOnly && path !== '/account')) return null
+  return <section className="card mt-5 border border-cande-200 bg-cande-50 p-5" aria-label="Instalar Fresas Cande">
+    <div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-cande-500 text-white"><Smartphone size={21} /></span><div><h2 className="text-lg font-black text-cande-900">📲 Instala Fresas Cande en tu celular</h2><p className="mt-1 text-sm leading-relaxed text-zinc-700">Ten nuestra app para pedir más rápido, consultar tus puntos, promociones y recompensas.</p></div></div>
     <button type="button" onClick={install} className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-cande-500 font-black text-white"><Download size={18} />📲 INSTALAR APP</button>
     {showHelp && <Instructions platform={platform} close={() => setShowHelp(false)} />}
-  </section>, target)
+  </section>
 }
 
 export function InstallCande() {
