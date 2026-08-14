@@ -6,6 +6,7 @@ import { Download, Share2, Smartphone, X } from 'lucide-react'
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> }
 type Platform = 'ios' | 'android' | 'other'
+declare global { interface Window { __candeInstallPrompt?: InstallEvent | null } }
 const DISMISSED_KEY = 'cande-install-dismissed-at'
 const DISMISS_FOR_MS = 14 * 24 * 60 * 60 * 1000
 
@@ -30,18 +31,45 @@ function useInstallState() {
   useEffect(() => {
     setInstalled(isStandalone())
     setPlatform(detectPlatform())
-    const ready = (event: Event) => { event.preventDefault(); setInstallEvent(event as InstallEvent); setInstalled(false) }
-    const completed = () => { localStorage.removeItem(DISMISSED_KEY); setInstallEvent(null); setInstalled(true); setShowHelp(false) }
+    setInstallEvent(window.__candeInstallPrompt ?? null)
+    const ready = (event: Event) => {
+      event.preventDefault()
+      window.__candeInstallPrompt = event as InstallEvent
+      setInstallEvent(event as InstallEvent)
+      setInstalled(false)
+    }
+    const captured = () => { setInstallEvent(window.__candeInstallPrompt ?? null); setInstalled(false) }
+    const consumed = () => setInstallEvent(null)
+    const completed = () => {
+      localStorage.removeItem(DISMISSED_KEY)
+      window.__candeInstallPrompt = null
+      setInstallEvent(null)
+      setInstalled(true)
+      setShowHelp(false)
+    }
     addEventListener('beforeinstallprompt', ready)
     addEventListener('appinstalled', completed)
-    return () => { removeEventListener('beforeinstallprompt', ready); removeEventListener('appinstalled', completed) }
+    addEventListener('candeinstallready', captured)
+    addEventListener('candeinstallconsumed', consumed)
+    addEventListener('candeappinstalled', completed)
+    return () => {
+      removeEventListener('beforeinstallprompt', ready)
+      removeEventListener('appinstalled', completed)
+      removeEventListener('candeinstallready', captured)
+      removeEventListener('candeinstallconsumed', consumed)
+      removeEventListener('candeappinstalled', completed)
+    }
   }, [])
 
   const install = async () => {
-    if (!installEvent) { setShowHelp(true); return }
-    await installEvent.prompt()
-    const choice = await installEvent.userChoice
-    if (choice.outcome === 'accepted') { setInstallEvent(null); setInstalled(true) }
+    const promptEvent = installEvent ?? window.__candeInstallPrompt ?? null
+    if (!promptEvent) { setShowHelp(true); return }
+    setShowHelp(false)
+    promptEvent.prompt()
+    const choice = await promptEvent.userChoice
+    window.__candeInstallPrompt = null
+    dispatchEvent(new Event('candeinstallconsumed'))
+    if (choice.outcome === 'accepted') setInstalled(true)
     else setShowHelp(true)
   }
   return { installed, platform, showHelp, setShowHelp, install }
