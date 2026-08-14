@@ -1,4 +1,4 @@
-const CACHE='cande-app-v6';
+const CACHE='cande-app-v7';
 const SHELL=['/','/driver','/manifest.webmanifest','/driver-manifest.webmanifest','/icons/cande-driver-192.png','/icons/cande-driver-512.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
@@ -8,10 +8,10 @@ self.addEventListener('fetch',event=>{
   if(event.request.mode==='navigate'){
     const fallback=url.pathname.startsWith('/driver')?'/driver':'/';
     event.respondWith(fetch(event.request).then(async response=>{
-      if(response.status===404)return (await caches.match(fallback))||fetch(fallback);
+      if(response.status===404)return Response.redirect(new URL(fallback,self.location.origin),302);
       if(response.ok&&url.origin===self.location.origin){const cache=await caches.open(CACHE);await cache.put(event.request,response.clone())}
       return response;
-    }).catch(async()=>await caches.match(event.request)||await caches.match(fallback)||fetch(fallback)));
+    }).catch(async()=>await caches.match(event.request)||Response.redirect(new URL(fallback,self.location.origin),302)));
     return;
   }
   event.respondWith(fetch(event.request).then(response=>{
