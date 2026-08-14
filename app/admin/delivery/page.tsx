@@ -9,7 +9,7 @@ import {money} from '@/lib/data'
 type Item={id:string;product_name:string;size_name:string;unit_price:number;quantity:number;toppings:{name:string;price:number}[];line_total:number}
 type Assignment={id:string;order_id:string;status:string;delivery_fee:number;accepted_at:string;updated_at:string;heading_to_pickup_at:string|null;picked_up_at:string|null;delivering_at:string|null;delivered_at:string|null;couriers:Courier|null}
 type Request={id:string;order_id:string;status:string;pay:number;requested_at:string;assigned_at:string|null;delivery_assignments:Assignment[]}
-type Order={id:string;customer_id:string;order_number:number;status:string;delivery_type:string;address:any;references_text:string|null;notes:string|null;payment_method:string;payment_status:string;subtotal:number;delivery_fee:number;discount:number;total:number;points_earned:number;created_at:string;delivered_at:string|null;customers:{name:string;phone:string}|null;order_items:Item[];delivery_requests:Request[]}
+type Order={id:string;customer_id:string;order_number:number;status:string;delivery_type:string;address:any;references_text:string|null;notes:string|null;payment_method:string;payment_status:string;subtotal:number;delivery_fee:number;delivery_distance_km:number|null;driver_pay:number;delivery_business_share:number;discount:number;total:number;points_earned:number;created_at:string;delivered_at:string|null;customers:{name:string;phone:string}|null;order_items:Item[];delivery_requests:Request[]}
 type Courier={id:string;name:string;phone:string;status:string;fee_per_delivery:number;last_activity_at:string|null;delivery_assignments:Assignment[]}
 
 const labels:Record<string,string>={pending:'Nuevo',confirmed:'Confirmado',preparing:'Preparando',ready:'Listo',requested:'Buscando repartidor',assigned:'Asignado',accepted:'Asignado',heading_to_pickup:'Recogiendo pedido',picked_up:'Pedido recogido',delivering:'En camino',delivered:'Entregado',cancelled:'Cancelado'}
@@ -19,7 +19,7 @@ const activeStatuses=['accepted','heading_to_pickup','picked_up','delivering']
 export default function DeliveryAdmin(){
  const[orders,setOrders]=useState<Order[]>([]),[couriers,setCouriers]=useState<Courier[]>([]),[busy,setBusy]=useState(''),[notice,setNotice]=useState(''),[selected,setSelected]=useState<Order|null>(null),[selectedCourier,setSelectedCourier]=useState<Courier|null>(null)
  const load=useCallback(async()=>{if(!supabase)return;const[or,cr,rr,ar,ir]=await Promise.all([
-  supabase.from('orders').select('id,customer_id,order_number,status,delivery_type,address,references_text,notes,payment_method,payment_status,subtotal,delivery_fee,discount,total,points_earned,created_at,delivered_at').order('created_at',{ascending:false}),
+  supabase.from('orders').select('id,customer_id,order_number,status,delivery_type,address,references_text,notes,payment_method,payment_status,subtotal,delivery_fee,delivery_distance_km,driver_pay,delivery_business_share,discount,total,points_earned,created_at,delivered_at').order('created_at',{ascending:false}),
   supabase.from('customers').select('id,name,phone'),
   supabase.from('delivery_requests').select('id,order_id,status,pay,requested_at,assigned_at'),
   supabase.from('couriers').select('id,name,phone,status,fee_per_delivery,last_activity_at,delivery_assignments(id,order_id,status,delivery_fee,accepted_at,updated_at,heading_to_pickup_at,picked_up_at,delivering_at,delivered_at,courier_id)'),

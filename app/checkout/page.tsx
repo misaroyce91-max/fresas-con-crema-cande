@@ -8,10 +8,11 @@ import { useStore } from '@/components/store-provider'
 import { useAuth } from '@/components/auth-provider'
 import { supabase } from '@/lib/supabase'
 import { money } from '@/lib/data'
-import { orderTotal } from '@/lib/pricing'
+import { orderTotal, toppingsUnitTotal } from '@/lib/pricing'
 
 type DeliveryType = 'delivery' | 'pickup'
 type LocationState = 'idle' | 'loading' | 'shared' | 'denied' | 'unavailable'
+type DeliveryQuote = { configured:boolean;serviceable:boolean;distanceKm?:number;fee?:number;driverPay?:number;businessShare?:number;reason?:string;freeShipping?:boolean }
 
 const BUSINESS_WHATSAPP = '527222219560'
 
@@ -35,6 +36,9 @@ export default function Checkout() {
   const [saving, setSaving] = useState(false)
   const [confirmedTotal, setConfirmedTotal] = useState(0)
   const [confirmedPoints, setConfirmedPoints] = useState(0)
+  const [distanceEnabled, setDistanceEnabled] = useState(false)
+  const [deliveryQuote, setDeliveryQuote] = useState<DeliveryQuote | null>(null)
+  const [quoteLoading, setQuoteLoading] = useState(false)
 
   useEffect(() => {
     setRequestId(crypto.randomUUID())
@@ -44,9 +48,20 @@ export default function Checkout() {
     if (profile) { setName(profile.name); setPhone(profile.phone) }
   }, [profile])
 
-  const shipping = type === 'delivery' ? config.shippingFee : 0
+  useEffect(()=>{supabase?.from('delivery_rate_settings').select('enabled').eq('id','main').single().then(({data})=>setDistanceEnabled(Boolean(data?.enabled)))},[])
+
+  useEffect(()=>{
+    if(type!=='delivery'||!coordinates||!supabase){setDeliveryQuote(null);setQuoteLoading(false);return}
+    let active=true;setQuoteLoading(true)
+    supabase.rpc('quote_delivery',{p_lat:coordinates.latitude,p_lng:coordinates.longitude,p_subtotal:subtotal}).then(({data,error})=>{if(active){setDeliveryQuote(error?{configured:true,serviceable:false,reason:error.message}:data as DeliveryQuote);setQuoteLoading(false)}})
+    return()=>{active=false}
+  },[coordinates,subtotal,type])
+
+  const shipping = type === 'delivery' ? distanceEnabled ? Number(deliveryQuote?.fee||0) : config.shippingFee : 0
   const discount = Math.min(subtotal, rewardDiscount)
   const total = orderTotal(subtotal, shipping, discount)
+  const productsSubtotal=items.reduce((sum,item)=>sum+Number(item.unitPrice)*item.quantity,0)
+  const toppingsSubtotal=items.reduce((sum,item)=>sum+toppingsUnitTotal(item.toppings)*item.quantity,0)
   const points = Math.floor(total * config.pointsPerPeso)
   const mapsUrl = coordinates
     ? `https://www.google.com/maps?q=${coordinates.latitude},${coordinates.longitude}`
@@ -66,6 +81,7 @@ export default function Checkout() {
       `Cliente: ${name}`,
       `Teléfono: ${phone}`,
       `Entrega: ${type === 'delivery' ? 'Domicilio' : 'Recoger pedido'}`,
+      ...(type==='delivery'&&deliveryQuote?.distanceKm?[`Distancia aproximada: ${Number(deliveryQuote.distanceKm).toFixed(1)} km`]:[]),
       '',
       'PEDIDO:',
       products,
@@ -91,7 +107,7 @@ export default function Checkout() {
       '',
       `Fresas Cande al completar el pedido: ${points} 🍓`,
     ].join('\n')
-  }, [address, discount, items, mapsUrl, name, notes, orderId, payment, phone, points, references, shipping, subtotal, total, type])
+  }, [address, deliveryQuote, discount, items, mapsUrl, name, notes, orderId, payment, phone, points, references, shipping, subtotal, total, type])
 
   function requestLocation() {
     if (!('geolocation' in navigator)) {
@@ -210,8 +226,8 @@ export default function Checkout() {
                 {locationState === 'loading' ? 'OBTENIENDO UBICACIÓN…' : locationState === 'shared' ? 'ACTUALIZAR MI UBICACIÓN' : '📍 COMPARTIR MI UBICACIÓN'}
               </button>
               {locationState === 'shared' && mapsUrl && <a href={mapsUrl} target="_blank" rel="noreferrer" className="mt-3 block break-all text-center text-xs font-bold text-cande-700">Ver ubicación en Google Maps</a>}
-              {locationState === 'denied' && <p role="status" className="mt-3 text-center text-xs leading-relaxed text-zinc-600">No se compartió la ubicación. Puedes continuar con dirección y referencias.</p>}
-              {locationState === 'unavailable' && <p role="status" className="mt-3 text-center text-xs leading-relaxed text-zinc-600">No pudimos obtener tu ubicación. Puedes continuar normalmente con la dirección.</p>}
+              {locationState === 'denied' && <p role="status" className="mt-3 text-center text-xs font-bold leading-relaxed text-cande-800">{distanceEnabled?'Necesitamos la ubicación para calcular el envío. Activa el permiso o elige Recoger pedido.':'No se compartió la ubicación. Puedes continuar con dirección y referencias.'}</p>}
+              {locationState === 'unavailable' && <p role="status" className="mt-3 text-center text-xs font-bold leading-relaxed text-cande-800">{distanceEnabled?'No pudimos calcular el envío. Intenta compartir la ubicación otra vez o elige Recoger pedido.':'No pudimos obtener tu ubicación. Puedes continuar normalmente con la dirección.'}</p>}
             </div>
           </div>
           <div className="pt-2"><label className="mb-2 block text-xs font-bold uppercase text-zinc-500">Dirección</label><input required className="input" placeholder="Dirección completa" value={address} onChange={(e) => setAddress(e.target.value)} /></div>
@@ -226,13 +242,17 @@ export default function Checkout() {
       </section>
 
       <section className="card p-5">
-        <div className="flex justify-between text-sm"><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
-        <div className="mt-2 flex justify-between text-sm"><span>Envío</span><strong>{money(shipping)}</strong></div>
+        <div className="flex justify-between text-sm"><span>Productos</span><strong>{money(productsSubtotal)}</strong></div>
+        <div className="mt-2 flex justify-between text-sm"><span>Toppings y extras</span><strong>{money(toppingsSubtotal)}</strong></div>
+        <div className="mt-2 flex justify-between border-t border-cande-100 pt-2 text-sm"><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
+        <div className="mt-2 flex justify-between text-sm"><span>Envío según distancia</span><strong>{quoteLoading?'Calculando…':distanceEnabled&&!deliveryQuote?'Comparte ubicación':money(shipping)}</strong></div>
+        {type==='delivery'&&deliveryQuote?.distanceKm&&<div className="mt-2 flex justify-between text-sm text-cande-700"><span>Distancia aproximada</span><strong>{Number(deliveryQuote.distanceKm).toFixed(1)} km</strong></div>}
+        {type==='delivery'&&deliveryQuote&&!deliveryQuote.serviceable&&<p className="mt-3 rounded-md bg-red-50 p-3 text-sm font-bold text-red-700">Por el momento esta dirección está fuera de nuestra zona de entrega.</p>}
         <div className="mt-2 flex justify-between text-sm"><span>Descuento</span><strong>{money(discount)}</strong></div>
         <div className="mt-4 flex justify-between border-t pt-4 text-lg"><strong>Total</strong><strong className="text-cande-700">{money(total)}</strong></div>
       </section>
 
-      <button disabled={!items.length||saving} className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-5 font-bold text-white disabled:opacity-40">
+      <button disabled={!items.length||saving||(type==='delivery'&&distanceEnabled&&(quoteLoading||!deliveryQuote?.serviceable))} className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-5 font-bold text-white disabled:opacity-40">
         <MessageCircle size={20} /> {saving?'Guardando pedido…':user?'Enviar pedido por WhatsApp':'Crear cuenta para continuar'}
       </button>
       <p className="text-center text-xs text-zinc-500">Primero guardaremos tu pedido. Las Fresas Cande se acreditan al pagarlo o completarlo; después abriremos WhatsApp.</p>
