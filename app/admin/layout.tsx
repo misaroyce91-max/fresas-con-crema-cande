@@ -5,7 +5,7 @@ import {Logo} from '@/components/logo'
 import {useAuth} from '@/components/auth-provider'
 import {supabase} from '@/lib/supabase'
 
-const links=[['/admin','Dashboard'],['/admin/insights','Resumen'],['/admin/store','Productos'],['/admin/inventory','Inventario'],['/admin/promotions','Promociones'],['/admin/rewards','Rewards'],['/admin/delivery','Repartidores']]
+const links=[['/admin','Dashboard'],['/admin/customers','Clientes'],['/admin/insights','Resumen'],['/admin/store','Productos'],['/admin/inventory','Inventario'],['/admin/promotions','Promociones'],['/admin/rewards','Rewards'],['/admin/drivers','Equipo'],['/admin/delivery','Entregas']]
 
 export default function AdminLayout({children}:{children:React.ReactNode}){
  const{user,loading,refreshProfile,signOut}=useAuth(),[identifier,setIdentifier]=useState(''),[password,setPassword]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),role=user?.app_metadata?.role
