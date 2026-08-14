@@ -37,7 +37,7 @@ export default function PromotionsAdmin(){
   setLoading(false)
  },[])
 
- useEffect(()=>{if(!supabase)return;supabase.rpc('admin_refresh_smart_promotions').then(()=>load());const channel=supabase.channel('admin-promotions-live').on('postgres_changes',{event:'*',schema:'public',table:'promotions'},()=>load()).on('postgres_changes',{event:'INSERT',schema:'public',table:'orders'},()=>load()).subscribe();return()=>{supabase?.removeChannel(channel)}},[load])
+ useEffect(()=>{if(!supabase)return;const refresh=()=>supabase!.rpc('admin_refresh_smart_promotions').then(()=>load());refresh();const timer=setInterval(refresh,60*60*1000);const channel=supabase.channel('admin-promotions-live').on('postgres_changes',{event:'*',schema:'public',table:'promotions'},()=>load()).on('postgres_changes',{event:'INSERT',schema:'public',table:'orders'},refresh).subscribe();return()=>{clearInterval(timer);supabase?.removeChannel(channel)}},[load])
  const metrics=useMemo(()=>analyze(orders,products),[orders,products])
  const recovery=useMemo(()=>recover(orders,customers),[orders,customers])
  const suggested=promotions.filter(p=>p.status==='suggested')
