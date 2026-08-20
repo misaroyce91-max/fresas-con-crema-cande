@@ -9,6 +9,7 @@ import { useAuth } from '@/components/auth-provider'
 import { supabase } from '@/lib/supabase'
 import { money } from '@/lib/data'
 import { orderTotal, toppingsUnitTotal } from '@/lib/pricing'
+import {FirstPurchaseGift,useFirstPurchaseOffer} from '@/components/first-purchase-gift'
 
 type DeliveryType = 'delivery' | 'pickup'
 type LocationState = 'idle' | 'loading' | 'shared' | 'denied' | 'unavailable'
@@ -17,6 +18,7 @@ type DeliveryQuote = { configured:boolean;serviceable:boolean;distanceKm?:number
 const BUSINESS_WHATSAPP = '527222219560'
 
 export default function Checkout() {
+  const firstPurchaseOffer = useFirstPurchaseOffer()
   const { items, redemptions, subtotal, rewardDiscount, clear } = useCart()
   const { config } = useStore()
   const { user, profile, refreshProfile } = useAuth()
@@ -72,7 +74,7 @@ export default function Checkout() {
       const lines = [`${item.quantity}x ${item.name} ${item.size}`]
       if (item.toppings.length) lines.push(`Toppings: ${item.toppings.map((t) => t.name).join(', ')}`)
       return lines.join('\n')
-    }).join('\n\n')
+    }).concat(firstPurchaseOffer.eligible ? ['🎁 1x Fresas Clásicas Chicas — Primera compra: GRATIS'] : []).join('\n\n')
 
     return [
       '\u{1F353} NUEVO PEDIDO - FRESAS CON CREMA CANDE',
@@ -107,7 +109,7 @@ export default function Checkout() {
       '',
       `Fresas Cande al completar el pedido: ${points} 🍓`,
     ].join('\n')
-  }, [address, deliveryQuote, discount, items, mapsUrl, name, notes, orderId, payment, phone, points, references, shipping, subtotal, total, type])
+  }, [address, deliveryQuote, discount, firstPurchaseOffer.eligible, items, mapsUrl, name, notes, orderId, payment, phone, points, references, shipping, subtotal, total, type])
 
   function requestLocation() {
     if (!('geolocation' in navigator)) {
@@ -152,13 +154,14 @@ export default function Checkout() {
     if(error){alert(`No pudimos guardar el pedido: ${error.message}`);return}
     const saved=data as any
     const savedOrderId=`CAN-${String(saved.orderNumber).padStart(6,'0')}`
-    const finalMessage=message
+    let finalMessage=message
       .replace(`Pedido: ${orderId}`,`Pedido: ${savedOrderId}`)
       .replace(`Subtotal: ${money(subtotal)}`,`Subtotal: ${money(Number(saved.subtotal))}`)
       .replace(`Envío: ${money(shipping)}`,`Envío: ${money(Number(saved.deliveryFee))}`)
       .replace(`Descuento: ${money(discount)}`,`Descuento: ${money(Number(saved.discount))}`)
       .replace(`Total: ${money(total)}`,`Total: ${money(Number(saved.total))}`)
       .replace(`Fresas Cande al completar el pedido: ${points} 🍓`,`Fresas Cande al completar el pedido: ${saved.strawberriesPending} 🍓`)
+    if(!saved.gift) finalMessage=finalMessage.replace(/\n\n🎁 1x Fresas Clásicas Chicas — Primera compra: GRATIS/,'')
     setOrderId(savedOrderId)
     setConfirmedTotal(Number(saved.total));setConfirmedPoints(Number(saved.strawberriesPending))
     setConfirmedMessage(finalMessage)
@@ -195,6 +198,7 @@ export default function Checkout() {
     </header>
 
     <form onSubmit={submit} className="mt-7 space-y-6">
+      <FirstPurchaseGift />
       {!user&&<section className="rounded-lg border-2 border-cande-500 bg-cande-50 p-5"><h2 className="font-black text-cande-900">Crea tu cuenta para acumular Fresas Cande</h2><p className="mt-2 text-sm text-zinc-600">Guardaremos este pedido, tus 🍓 y tu historial para que puedas consultarlos desde cualquier celular.</p><Link href="/account?next=/checkout" className="mt-4 inline-flex rounded-full bg-cande-500 px-5 py-3 text-sm font-bold text-white">Entrar o registrarme</Link></section>}
       <section className="card p-5">
         <h2 className="font-extrabold">Tus datos</h2>

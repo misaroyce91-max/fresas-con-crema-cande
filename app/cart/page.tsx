@@ -7,6 +7,7 @@ import { useCart } from '@/components/cart-provider'
 import { useStore } from '@/components/store-provider'
 import { money } from '@/lib/data'
 import { itemLineTotal, orderTotal, toppingsUnitTotal } from '@/lib/pricing'
+import {FirstPurchaseGift} from '@/components/first-purchase-gift'
 
 export default function Cart() {
   const { items, redemptions, update, removeRedemption, subtotal, rewardDiscount } = useCart()
@@ -18,7 +19,8 @@ export default function Cart() {
   return <main className="page max-w-3xl">
     <header className="flex items-center gap-4"><Link href="/menu" className="grid h-10 w-10 place-items-center rounded-full bg-cande-50"><ArrowLeft size={20} /></Link><div><p className="text-xs font-bold uppercase text-cande-500">Tu selección</p><h1 className="text-2xl font-black">Carrito</h1></div></header>
     {!items.length ? <section className="mt-20 text-center"><ShoppingBag className="mx-auto text-cande-300" size={52} /><h2 className="mt-5 text-xl font-black">Tu carrito está esperando</h2><p className="mt-2 text-sm text-zinc-500">Agrega una combinación deliciosa para continuar.</p><Link href="/menu" className="mt-6 inline-block rounded-full bg-cande-500 px-6 py-3 font-bold text-white">Explorar menú</Link></section> : <>
-      <section className="mt-7 space-y-3">{items.map((item) => {
+      <div className="mt-6"><FirstPurchaseGift compact /></div>
+      <section className="mt-4 space-y-3">{items.map((item) => {
         const toppingTotal = toppingsUnitTotal(item.toppings)
         return <article key={item.key} className={`card flex gap-4 p-3 ${item.redemptionId ? 'border-2 border-cande-200 bg-cande-50' : ''}`}>
           <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-md"><Image src={item.image} alt={item.name} fill className="object-cover" /></div>
