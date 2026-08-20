@@ -2,11 +2,11 @@ export type Product = { id:string; name:string; description:string; image:string
 export type Promotion = { id:string; eyebrow:string; title:string; description:string; image:string; startsAt:string; endsAt:string; ctaHref:string }
 export const sizes = ['10 oz','12 oz','16 oz']
 export const products: Product[] = [
-  {id:'classic',name:'Clásicas',description:'Fresas frescas, crema de la casa y un toque de amor Cande.',image:'/images/cande-classic.png',badge:'La favorita',prices:{'10 oz':80,'12 oz':95,'16 oz':115}},
-  {id:'oreo',name:'Oreo',description:'Crema suave, fresas y abundante galleta de chocolate.',image:'/images/cande-oreo.png',prices:{'10 oz':90,'12 oz':105,'16 oz':120}},
-  {id:'kinder-bueno',name:'Kinder Bueno',description:'Fresas, crema, avellana y crujientes trozos de wafer.',image:'/images/cande-special.png',badge:'Especial',prices:{'10 oz':95,'12 oz':110,'16 oz':120}},
-  {id:'kinder-delice',name:'Kinder Delice',description:'Chocolate, pastelito suave y nuestra crema artesanal.',image:'/images/cande-special.png',prices:{'10 oz':95,'12 oz':110,'16 oz':120}},
-  {id:'nutella',name:'Nutella',description:'La combinación intensa de avellana, crema y fresa.',image:'/images/cande-classic.png',prices:{'10 oz':95,'12 oz':110,'16 oz':120}},
+  {id:'classic',name:'Clásicas',description:'Fresas frescas, crema de la casa y un toque de amor Cande.',image:'/images/products/clasicas.jpg',badge:'La favorita',prices:{'10 oz':80,'12 oz':95,'16 oz':115}},
+  {id:'oreo',name:'Oreo',description:'Crema suave, fresas y abundante galleta de chocolate.',image:'/images/products/oreo.jpg',prices:{'10 oz':90,'12 oz':105,'16 oz':120}},
+  {id:'kinder-bueno',name:'Kinder Bueno',description:'Fresas, crema, avellana y crujientes trozos de wafer.',image:'/images/products/kinder-bueno.jpg',badge:'Especial',prices:{'10 oz':95,'12 oz':110,'16 oz':120}},
+  {id:'kinder-delice',name:'Kinder Delice',description:'Chocolate, pastelito suave y nuestra crema artesanal.',image:'/images/products/kinder-delice.jpg',prices:{'10 oz':95,'12 oz':110,'16 oz':120}},
+  {id:'nutella',name:'Nutella',description:'La combinación intensa de avellana, crema y fresa.',image:'/images/products/nutella.jpg',prices:{'10 oz':95,'12 oz':110,'16 oz':120}},
   {id:'ferrero',name:'Ferrero',description:'Un antojo premium con avellana, chocolate y textura crujiente.',image:'/images/cande-special.png',prices:{'10 oz':88,'12 oz':102,'16 oz':132}},
   {id:'carlos-v',name:'Carlos V',description:'Chocolate con leche en trocitos sobre fresas muy frescas.',image:'/images/cande-oreo.png',prices:{'10 oz':90,'12 oz':105,'16 oz':120}},
 ]
