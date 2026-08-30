@@ -24,7 +24,7 @@ export function StoreProvider({children}:{children:React.ReactNode}){
   supabase.from('toppings').select('id,name,price,active').order('name'),supabase.from('topping_products').select('topping_id,product_id'),
   supabase.from('inventory_items').select('id,name,unit,unit_cost,stock_quantity,active').order('name'),
   supabase.from('product_recipe_items').select('product_id,size_name,inventory_item_id,quantity'),
-  supabase.from('rewards').select('name,points_cost,active').order('sort_order'),supabase.from('store_settings').select('shipping_fee').eq('id','main').single(),
+  supabase.from('rewards').select('name,points_cost,active').eq('claim_only',false).order('sort_order'),supabase.from('store_settings').select('shipping_fee').eq('id','main').single(),
   supabase.from('promotions').select('*').eq('status','active').order('starts_at',{ascending:false}),
   supabase.from('point_rules').select('points_per_peso').eq('active',true).order('starts_at',{ascending:false}).limit(1).maybeSingle()
  ]);const critical=p.error||t.error||tp.error||r.error||s.error;if(critical){setLoading(false);throw critical}const links=tp.data||[],inventory=(inv.data||[]).map((x:any)=>({id:x.id,name:x.name,unit:x.unit,unitCost:Number(x.unit_cost),stockQuantity:Number(x.stock_quantity),active:x.active}));

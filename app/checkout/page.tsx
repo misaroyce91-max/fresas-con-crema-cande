@@ -251,7 +251,7 @@ export default function Checkout() {
         <div className="mt-2 flex justify-between border-t border-cande-100 pt-2 text-sm"><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
         <div className="mt-2 flex justify-between text-sm"><span>Envío según distancia</span><strong>{quoteLoading?'Calculando…':distanceEnabled&&!deliveryQuote?'Comparte ubicación':money(shipping)}</strong></div>
         {type==='delivery'&&deliveryQuote?.distanceKm&&<div className="mt-2 flex justify-between text-sm text-cande-700"><span>Distancia aproximada</span><strong>{Number(deliveryQuote.distanceKm).toFixed(1)} km</strong></div>}
-        {type==='delivery'&&deliveryQuote&&!deliveryQuote.serviceable&&<p className="mt-3 rounded-md bg-red-50 p-3 text-sm font-bold text-red-700">Por el momento esta dirección está fuera de nuestra zona de entrega.</p>}
+        {type==='delivery'&&deliveryQuote&&!deliveryQuote.serviceable&&<><p className="mt-3 rounded-md bg-red-50 p-3 text-sm font-bold text-red-700">Por el momento esta dirección está fuera de nuestra zona de entrega.</p><div className="mt-3 grid grid-cols-2 gap-2"><button type="button" onClick={requestLocation} className="h-11 rounded-md border border-cande-300 bg-white text-sm font-bold text-cande-700">Cambiar ubicación</button><button type="button" onClick={()=>setType('pickup')} className="h-11 rounded-md bg-cande-500 text-sm font-bold text-white">Recoger en sucursal</button></div></>}
         <div className="mt-2 flex justify-between text-sm"><span>Descuento</span><strong>{money(discount)}</strong></div>
         <div className="mt-4 flex justify-between border-t pt-4 text-lg"><strong>Total</strong><strong className="text-cande-700">{money(total)}</strong></div>
       </section>

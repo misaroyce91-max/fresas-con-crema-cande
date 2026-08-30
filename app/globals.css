@@ -10,7 +10,7 @@ button, input, select, textarea { font:inherit; }
 button { -webkit-tap-highlight-color:transparent; }
 .hide-scroll::-webkit-scrollbar { display:none; }
 .hide-scroll { scrollbar-width:none; }
-.page { width:100%; max-width:1180px; margin:0 auto; padding:20px 18px 130px; }
+.page { width:100%; max-width:1180px; margin:0 auto; padding:20px 18px calc(130px + env(safe-area-inset-bottom)); }
 .pill { border-radius:999px; }
 .card { border:1px solid #f6e5e9; border-radius:8px; background:#fff; box-shadow:0 10px 30px rgba(92,18,41,.07); }
 .section-title { font-size:1.3rem; font-weight:800; letter-spacing:0; }
