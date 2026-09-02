@@ -9,6 +9,7 @@ import { useCart } from '@/components/cart-provider'
 import { ManagedProduct, ManagedTopping, useStore } from '@/components/store-provider'
 import { Logo } from '@/components/logo'
 import { EmptyMenu, MenuSkeleton } from '@/components/ui-state'
+import { FavoriteButton } from '@/components/favorite-button'
 
 function ProductCard({ product, toppings }: { product: ManagedProduct; toppings: ManagedTopping[] }) {
   const offered = Object.keys(product.availableSizes).filter((size) => product.availableSizes[size])
@@ -23,7 +24,7 @@ function ProductCard({ product, toppings }: { product: ManagedProduct; toppings:
   const from = offered.length ? Math.min(...offered.map((offeredSize) => Number(product.prices[offeredSize]))) : 0
 
   return <article className="card overflow-hidden">
-    <div className="relative aspect-[4/5] overflow-hidden bg-cande-50"><Image src={product.image} alt={product.name} fill sizes="(min-width: 768px) 50vw, 100vw" className="object-contain object-center" unoptimized />{product.specialty && <span className="pill absolute left-3 top-3 bg-white px-3 py-1 text-xs font-bold text-cande-600 shadow">Especialidad</span>}</div>
+    <div className="relative aspect-[4/5] overflow-hidden bg-cande-50"><Image src={product.image} alt={product.name} fill sizes="(min-width: 768px) 50vw, 100vw" className="object-contain object-center" unoptimized />{product.specialty && <span className="pill absolute left-3 top-3 bg-white px-3 py-1 text-xs font-bold text-cande-600 shadow">Especialidad</span>}<FavoriteButton productId={product.id} className="absolute right-3 top-3"/></div>
     <div className="p-5">
       <div className="flex justify-between gap-3"><div><p className="text-[10px] font-bold uppercase text-cande-500">{product.category}</p><h2 className="text-xl font-black">{product.name}</h2><p className="mt-1 text-sm text-zinc-500">{product.description}</p></div><strong className="text-cande-700">{money(from)}+</strong></div>
       <p className="mt-5 text-xs font-bold uppercase text-zinc-500">Elige tamaño</p>
