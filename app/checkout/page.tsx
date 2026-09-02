@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { FormEvent, useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Check, Copy, LocateFixed, MapPin, MessageCircle, Store } from 'lucide-react'
+import { ArrowLeft, Bookmark, Check, Copy, LocateFixed, MapPin, MessageCircle, Store } from 'lucide-react'
 import { useCart } from '@/components/cart-provider'
 import { useStore } from '@/components/store-provider'
 import { useAuth } from '@/components/auth-provider'
@@ -14,8 +14,23 @@ import {FirstPurchaseGift,useFirstPurchaseOffer} from '@/components/first-purcha
 type DeliveryType = 'delivery' | 'pickup'
 type LocationState = 'idle' | 'loading' | 'shared' | 'denied' | 'unavailable'
 type DeliveryQuote = { configured:boolean;serviceable:boolean;distanceKm?:number;fee?:number;driverPay?:number;businessShare?:number;reason?:string;freeShipping?:boolean }
+type Coordinates = { latitude:number; longitude:number }
+type SavedAddress = { id:string; label:string; address:string; references:string; coordinates:Coordinates|null }
 
 const BUSINESS_WHATSAPP = '527222219560'
+
+function parseSavedAddresses(value:unknown):SavedAddress[]{
+  if(!Array.isArray(value))return []
+  return value.flatMap((item,index)=>{
+    if(!item||typeof item!=='object')return []
+    const row=item as Record<string,unknown>,address=typeof row.address==='string'?row.address.trim():''
+    if(!address)return []
+    const rawCoordinates=row.coordinates as Record<string,unknown>|null
+    const latitude=Number(rawCoordinates?.latitude),longitude=Number(rawCoordinates?.longitude)
+    const coordinates=Number.isFinite(latitude)&&Number.isFinite(longitude)&&latitude>=-90&&latitude<=90&&longitude>=-180&&longitude<=180?{latitude,longitude}:null
+    return [{id:typeof row.id==='string'?row.id:`legacy-${index}`,label:typeof row.label==='string'&&row.label.trim()?row.label.trim():`Dirección ${index+1}`,address,references:typeof row.references==='string'?row.references:'',coordinates}]
+  }).slice(-8)
+}
 
 export default function Checkout() {
   const firstPurchaseOffer = useFirstPurchaseOffer()
@@ -29,7 +44,7 @@ export default function Checkout() {
   const [address, setAddress] = useState('')
   const [references, setReferences] = useState('')
   const [notes, setNotes] = useState('')
-  const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null>(null)
+  const [coordinates, setCoordinates] = useState<Coordinates | null>(null)
   const [locationState, setLocationState] = useState<LocationState>('idle')
   const [done, setDone] = useState(false)
   const [confirmedMessage, setConfirmedMessage] = useState('')
@@ -41,6 +56,9 @@ export default function Checkout() {
   const [distanceEnabled, setDistanceEnabled] = useState(false)
   const [deliveryQuote, setDeliveryQuote] = useState<DeliveryQuote | null>(null)
   const [quoteLoading, setQuoteLoading] = useState(false)
+  const [saveAddress, setSaveAddress] = useState(false)
+  const [addressNotice, setAddressNotice] = useState('')
+  const [savedAddressIssue, setSavedAddressIssue] = useState('')
 
   useEffect(() => {
     setRequestId(crypto.randomUUID())
@@ -49,6 +67,8 @@ export default function Checkout() {
   useEffect(() => {
     if (profile) { setName(profile.name); setPhone(profile.phone) }
   }, [profile])
+
+  const savedAddresses=useMemo(()=>parseSavedAddresses(profile?.addresses),[profile?.addresses])
 
   useEffect(()=>{supabase?.from('delivery_rate_settings').select('enabled').eq('id','main').single().then(({data})=>setDistanceEnabled(Boolean(data?.enabled)))},[])
 
@@ -131,6 +151,33 @@ export default function Checkout() {
     )
   }
 
+  function chooseSavedAddress(saved:SavedAddress){
+    setAddress(saved.address)
+    setReferences(saved.references)
+    setCoordinates(saved.coordinates)
+    setLocationState(saved.coordinates?'shared':'idle')
+    setAddressNotice(saved.coordinates?'Usaremos la ubicación guardada para este pedido.':'Dirección cargada. Comparte su ubicación para calcular cobertura y envío.')
+  }
+
+  function editAddress(value:string){
+    setAddress(value)
+    if(coordinates){
+      setCoordinates(null)
+      setLocationState('idle')
+      setAddressNotice('La ubicación anterior se quitó. Comparte la ubicación de esta nueva dirección para calcular el envío.')
+    }
+  }
+
+  async function saveCurrentAddress(){
+    if(!supabase||!user||!saveAddress||!address.trim())return
+    const next=[...savedAddresses,{id:crypto.randomUUID(),label:`Dirección ${savedAddresses.length+1}`,address:address.trim(),references:references.trim(),coordinates}]
+      .filter((item,index,list)=>list.findIndex(other=>other.address.toLocaleLowerCase('es-MX')===item.address.toLocaleLowerCase('es-MX'))===index)
+      .slice(-8)
+    const {error}=await supabase.from('customers').update({addresses:next,updated_at:new Date().toISOString()}).eq('id',user.id)
+    if(error)setSavedAddressIssue('Tu pedido fue creado, pero no pudimos guardar esta dirección para después.')
+    else await refreshProfile()
+  }
+
   function openWhatsApp(text = confirmedMessage || message) {
     window.location.href = `https://wa.me/${BUSINESS_WHATSAPP}?text=${encodeURIComponent(text)}`
   }
@@ -165,9 +212,10 @@ export default function Checkout() {
     setOrderId(savedOrderId)
     setConfirmedTotal(Number(saved.total));setConfirmedPoints(Number(saved.strawberriesPending))
     setConfirmedMessage(finalMessage)
-    setDone(true)
     clear()
+    await saveCurrentAddress()
     await refreshProfile()
+    setDone(true)
     openWhatsApp(finalMessage)
   }
 
@@ -175,6 +223,7 @@ export default function Checkout() {
     <div className="mx-auto mt-12 grid h-20 w-20 place-items-center rounded-full bg-green-100 text-green-700"><Check size={38} /></div>
     <h1 className="mt-6 text-3xl font-black">¡Pedido guardado! 🍓</h1>
     <p className="mt-2 text-zinc-500">Tu pedido quedó registrado. Tus Fresas Cande se acreditarán al pagarlo o completarlo.</p>
+    {savedAddressIssue&&<p role="status" className="mx-auto mt-4 max-w-xl rounded-md bg-amber-50 p-3 text-sm font-bold text-amber-800">{savedAddressIssue}</p>}
     <section className="card mt-7 p-6 text-left">
       <p className="text-xs font-bold uppercase text-cande-500">Pedido {orderId}</p>
       <div className="mt-4 flex justify-between"><span>Total</span><strong>{money(confirmedTotal)}</strong></div>
@@ -234,8 +283,11 @@ export default function Checkout() {
               {locationState === 'unavailable' && <p role="status" className="mt-3 text-center text-xs font-bold leading-relaxed text-cande-800">{distanceEnabled?'No pudimos calcular el envío. Intenta compartir la ubicación otra vez o elige Recoger pedido.':'No pudimos obtener tu ubicación. Puedes continuar normalmente con la dirección.'}</p>}
             </div>
           </div>
-          <div className="pt-2"><label className="mb-2 block text-xs font-bold uppercase text-zinc-500">Dirección</label><input required className="input" placeholder="Dirección completa" value={address} onChange={(e) => setAddress(e.target.value)} /></div>
+          {savedAddresses.length>0&&<div className="rounded-md border border-cande-100 bg-white p-3"><p className="text-xs font-black uppercase text-zinc-500">Direcciones guardadas</p><div className="mt-2 flex flex-wrap gap-2">{savedAddresses.map(saved=><button key={saved.id} type="button" onClick={()=>chooseSavedAddress(saved)} className="max-w-full rounded-full border border-cande-200 px-3 py-2 text-left text-xs font-bold text-cande-700"><span className="block truncate">{saved.label}</span><span className="block max-w-48 truncate text-zinc-500">{saved.address}</span></button>)}</div></div>}
+          <div className="pt-2"><label className="mb-2 block text-xs font-bold uppercase text-zinc-500">Dirección</label><input required className="input" placeholder="Dirección completa" value={address} onChange={(e) => editAddress(e.target.value)} /></div>
           <div><label className="mb-2 block text-xs font-bold uppercase text-zinc-500">Referencias</label><input className="input" placeholder="Entre calles, color de fachada, número…" value={references} onChange={(e) => setReferences(e.target.value)} /></div>
+          <label className="flex items-start gap-3 rounded-md border border-cande-100 bg-white p-3 text-sm"><input type="checkbox" checked={saveAddress} onChange={e=>setSaveAddress(e.target.checked)} className="mt-1 h-4 w-4 accent-cande-500"/><span><Bookmark className="mr-1 inline text-cande-600" size={15}/><strong>Guardar esta dirección para otro pedido</strong><small className="mt-1 block text-zinc-500">No reemplazará tus direcciones anteriores.</small></span></label>
+          {addressNotice&&<p role="status" className="rounded-md bg-cande-50 p-3 text-sm font-bold text-cande-800">{addressNotice}</p>}
         </div>}
         <textarea className="input mt-3 min-h-24" placeholder="Notas del pedido" value={notes} onChange={(e) => setNotes(e.target.value)} />
       </section>

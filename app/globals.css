@@ -17,4 +17,10 @@ button { -webkit-tap-highlight-color:transparent; }
 .input { width:100%; border:1px solid #ead9de; border-radius:8px; padding:13px 14px; outline:none; background:#fff; }
 .input:focus { border-color:#f22e62; box-shadow:0 0 0 3px #ffe4ea; }
 .label { display:block; margin-bottom:6px; font-size:11px; font-weight:800; text-transform:uppercase; color:#71717a; }
+.skeleton { position:relative; overflow:hidden; border-radius:8px; background:#f8e9ed; }
+.skeleton::after { content:''; position:absolute; inset:0; transform:translateX(-100%); background:linear-gradient(90deg,transparent,rgba(255,255,255,.72),transparent); animation:cande-shimmer 1.35s infinite; }
+.empty-state { display:flex; flex-direction:column; align-items:center; border:1px dashed #f3bccb; border-radius:8px; background:#fffafb; padding:36px 20px; text-align:center; }
+.empty-state-icon { display:grid; height:54px; width:54px; place-items:center; border-radius:999px; background:#fce1e8; color:#d41950; }
+@keyframes cande-shimmer { 100% { transform:translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .skeleton::after { animation:none; } }
 @media (min-width:768px) { .page { padding:28px 32px 110px; } }

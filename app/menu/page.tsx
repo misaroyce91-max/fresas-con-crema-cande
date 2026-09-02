@@ -8,6 +8,7 @@ import { money } from '@/lib/data'
 import { useCart } from '@/components/cart-provider'
 import { ManagedProduct, ManagedTopping, useStore } from '@/components/store-provider'
 import { Logo } from '@/components/logo'
+import { EmptyMenu, MenuSkeleton } from '@/components/ui-state'
 
 function ProductCard({ product, toppings }: { product: ManagedProduct; toppings: ManagedTopping[] }) {
   const offered = Object.keys(product.availableSizes).filter((size) => product.availableSizes[size])
@@ -47,7 +48,7 @@ export default function Menu() {
   return <main className="page">
     <header className="flex items-center justify-between"><Logo /><SlidersHorizontal className="text-cande-700" /></header>
     <div className="mt-8"><p className="text-xs font-bold uppercase text-cande-500">Fresas para hoy</p><h1 className="mt-1 text-3xl font-black">Elige tu favorita</h1><p className="mt-2 text-sm text-zinc-500">Personalízala a tu gusto. La preparamos al confirmar.</p></div>
-    {loading ? <p className="mt-8 text-center text-sm text-zinc-500">Cargando menú…</p> : <div className="mt-6 grid gap-5 md:grid-cols-2">{products.map((product) => <ProductCard key={product.id} product={product} toppings={config.toppings} />)}</div>}
+    {loading ? <MenuSkeleton /> : products.length ? <div className="mt-6 grid gap-5 md:grid-cols-2">{products.map((product) => <ProductCard key={product.id} product={product} toppings={config.toppings} />)}</div> : <EmptyMenu />}
     {count > 0 && <Link href="/cart" className="fixed bottom-[138px] right-4 z-40 flex items-center gap-3 rounded-full bg-cande-900 px-5 py-3 text-sm font-bold text-white shadow-xl"><ShoppingBag size={18} />{count} · {money(subtotal)}</Link>}
   </main>
 }
