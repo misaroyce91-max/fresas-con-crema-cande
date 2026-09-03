@@ -1,0 +1,3 @@
+allowBuilds:
+  # ESLint only needs the JavaScript fallback; keep optional native postinstall disabled.
+  unrs-resolver: false
