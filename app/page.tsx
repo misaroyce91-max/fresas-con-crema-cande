@@ -34,23 +34,23 @@ export default function Home() {
   const points = profile?.points_balance || 0
 
   return <main className="page">
-    <header className="flex items-center justify-between">
+    <header className="sticky top-0 z-20 -mx-2 flex items-center justify-between rounded-2xl border border-white/70 bg-white/80 px-3 py-2 shadow-sm backdrop-blur-xl">
       <Logo />
       <Link href="/account" className="grid h-10 min-w-10 place-items-center rounded-full bg-cande-100 px-3 text-xs font-bold text-cande-700">{user ? (profile?.name.split(' ')[0] || 'Cuenta') : 'Entrar'}</Link>
     </header>
 
-    <section className="relative mt-6 min-h-[410px] overflow-hidden rounded-lg bg-cande-100">
+    <section className="relative mt-6 min-h-[430px] overflow-hidden rounded-[2rem] bg-cande-100 shadow-premium">
       <Image src={config.hero.image} alt="Fresas con crema Cande" fill priority className="object-cover" />
-      <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/60 to-transparent" />
-      <div className="relative z-10 max-w-[68%] px-6 py-8">
+      <div className="absolute inset-0 bg-gradient-to-r from-white via-white/75 to-white/5" />
+      <div className="relative z-10 max-w-[78%] px-6 py-9 sm:max-w-[58%]">
         <span className="pill inline-block bg-white/90 px-3 py-1.5 text-xs font-bold text-cande-600">{config.hero.title}</span>
-        <h1 className="mt-4 text-3xl font-black leading-tight text-cande-900">{profile ? `¡Hola, ${profile.name.split(' ')[0]}! 👋` : '¡Hola! 🍓'}</h1>
+        <h1 className="mt-4 text-4xl font-black leading-[1.03] tracking-[-.05em] text-cande-950">{profile ? `¡Hola, ${profile.name.split(' ')[0]}! 👋` : 'Tu antojo, recién preparado 🍓'}</h1>
         <p className="mt-3 text-sm leading-relaxed text-zinc-700">{config.hero.description}</p>
         <Link href="/menu" className="mt-6 inline-flex items-center gap-2 rounded-full bg-cande-500 px-5 py-3 text-sm font-bold text-white">{config.hero.button}<ArrowRight size={17} /></Link>
       </div>
     </section>
 
-    <section className="card relative z-10 -mt-12 mx-3 p-5">
+    <section className="card relative z-10 -mt-12 mx-3 rounded-3xl p-5">
       <div className="flex justify-between"><div><p className="text-xs font-bold uppercase text-zinc-500">{user ? 'Tus puntos' : 'Cande Rewards'}</p><p className="mt-1 text-3xl font-black text-cande-700">{points} <span className="text-sm">pts</span></p></div><Star fill="currentColor" className="text-cande-500" /></div>
       {user ? <p className="mt-3 text-xs text-zinc-600">Saldo guardado en tu cuenta Cande.</p> : <Link href="/account" className="mt-3 inline-flex text-sm font-bold text-cande-600">Regístrate para acumular puntos</Link>}
     </section>
@@ -68,7 +68,7 @@ export default function Home() {
       {query.trim() && <div className="mt-3 overflow-hidden rounded-md border border-cande-100 bg-white">{results.map(product => <Link href="/menu" key={product.id} className="flex items-center gap-3 border-b border-cande-50 p-3 last:border-0"><span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-cande-50"><Image src={product.image} alt="" fill className="object-contain" /></span><span className="min-w-0 flex-1"><strong className="block truncate">{product.name}</strong><small className="text-zinc-500">{product.category}</small></span><ArrowRight size={17} className="shrink-0 text-cande-500" /></Link>)}{!results.length && <p className="p-4 text-sm text-zinc-500">No encontramos productos con esa búsqueda.</p>}</div>}
     </section>
 
-    {promo && <section id="promo" className="relative mt-8 min-h-[360px] overflow-hidden rounded-lg bg-cande-900 text-white">
+    {promo && <section id="promo" className="relative mt-8 min-h-[360px] overflow-hidden rounded-[2rem] bg-cande-900 text-white shadow-premium">
       <Image src={promo.image} alt={promo.title} fill className="object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-cande-900 via-cande-900/70 to-transparent" />
       <div className="relative z-10 flex min-h-[360px] flex-col justify-end p-6">

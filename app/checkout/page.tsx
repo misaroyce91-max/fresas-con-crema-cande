@@ -245,6 +245,8 @@ export default function Checkout() {
       <Link href="/cart" className="grid h-10 w-10 place-items-center rounded-full bg-cande-50"><ArrowLeft size={20} /></Link>
       <div><p className="text-xs font-bold uppercase text-cande-500">Último paso</p><h1 className="text-2xl font-black">Completa tu pedido</h1></div>
     </header>
+    <div className="mt-6 grid grid-cols-3 gap-2" aria-label="Progreso del pedido"><span className="h-1.5 rounded-full bg-cande-500"/><span className="h-1.5 rounded-full bg-cande-500"/><span className="h-1.5 rounded-full bg-cande-200"/></div>
+    <p className="mt-2 text-right text-[11px] font-bold uppercase tracking-wide text-zinc-500">Paso 2 de 3 · entrega y confirmación</p>
 
     <form onSubmit={submit} className="mt-7 space-y-6">
       <FirstPurchaseGift />
@@ -252,8 +254,8 @@ export default function Checkout() {
       <section className="card p-5">
         <h2 className="font-extrabold">Tus datos</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <input required readOnly={Boolean(profile)} className="input read-only:bg-zinc-50" placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
-          <input required readOnly={Boolean(profile)} className="input read-only:bg-zinc-50" type="tel" inputMode="tel" placeholder="Teléfono" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <label><span className="label">Nombre</span><input aria-label="Nombre del cliente" required readOnly={Boolean(profile)} className="input read-only:bg-zinc-50" placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} /></label>
+          <label><span className="label">WhatsApp</span><input aria-label="Teléfono del cliente" required readOnly={Boolean(profile)} className="input read-only:bg-zinc-50" type="tel" inputMode="tel" placeholder="Teléfono" value={phone} onChange={(e) => setPhone(e.target.value)} /></label>
         </div>
       </section>
 

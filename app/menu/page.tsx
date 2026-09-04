@@ -16,6 +16,7 @@ function ProductCard({ product, toppings }: { product: ManagedProduct; toppings:
   const [size, setSize] = useState(offered[0] || '')
   const [selected, setSelected] = useState<string[]>([])
   const [quantity, setQuantity] = useState(1)
+  const [added, setAdded] = useState(false)
   const { add } = useCart()
   const available = toppings.filter((topping) => topping.active && (!product.toppingIds.length || product.toppingIds.includes(topping.id)))
   const chosen = available.filter((topping) => selected.includes(topping.name))
@@ -23,8 +24,9 @@ function ProductCard({ product, toppings }: { product: ManagedProduct; toppings:
   const unitTotal = productPrice + chosen.reduce((total, topping) => total + Number(topping.price), 0)
   const from = offered.length ? Math.min(...offered.map((offeredSize) => Number(product.prices[offeredSize]))) : 0
 
+  function addProduct(){add({ productId: product.id, name: product.name, image: product.image, size, toppings: chosen, quantity, unitPrice: productPrice });setAdded(true);window.setTimeout(()=>setAdded(false),1800)}
   return <article className="card overflow-hidden">
-    <div className="relative aspect-[4/5] overflow-hidden bg-cande-50"><Image src={product.image} alt={product.name} fill sizes="(min-width: 768px) 50vw, 100vw" className="object-contain object-center" unoptimized />{product.specialty && <span className="pill absolute left-3 top-3 bg-white px-3 py-1 text-xs font-bold text-cande-600 shadow">Especialidad</span>}<FavoriteButton productId={product.id} className="absolute right-3 top-3"/></div>
+    <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-cande-50 to-white"><Image src={product.image} alt={product.name} fill sizes="(min-width: 768px) 50vw, 100vw" className="object-contain object-center p-2" unoptimized />{product.specialty && <span className="pill absolute left-3 top-3 bg-white/95 px-3 py-1 text-xs font-bold text-cande-600 shadow">Especialidad</span>}<FavoriteButton productId={product.id} className="absolute right-3 top-3"/></div>
     <div className="p-5">
       <div className="flex justify-between gap-3"><div><p className="text-[10px] font-bold uppercase text-cande-500">{product.category}</p><h2 className="text-xl font-black">{product.name}</h2><p className="mt-1 text-sm text-zinc-500">{product.description}</p></div><strong className="text-cande-700">{money(from)}+</strong></div>
       <p className="mt-5 text-xs font-bold uppercase text-zinc-500">Elige tamaño</p>
@@ -36,8 +38,9 @@ function ProductCard({ product, toppings }: { product: ManagedProduct; toppings:
       })}</div>
       <div className="mt-5 flex items-center gap-3">
         <div className="flex h-12 items-center rounded-full border"><button aria-label="Disminuir" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="grid h-12 w-10 place-items-center"><Minus size={16} /></button><strong className="w-6 text-center">{quantity}</strong><button aria-label="Aumentar" onClick={() => setQuantity(quantity + 1)} className="grid h-12 w-10 place-items-center"><Plus size={16} /></button></div>
-        <button disabled={!offered.length} onClick={() => add({ productId: product.id, name: product.name, image: product.image, size, toppings: chosen, quantity, unitPrice: productPrice })} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-cande-500 px-4 text-sm font-bold text-white disabled:opacity-50"><ShoppingBag size={18} />Agregar · {money(unitTotal * quantity)}</button>
+        <button disabled={!offered.length} onClick={addProduct} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-cande-500 px-4 text-sm font-bold text-white shadow-soft disabled:opacity-50"><ShoppingBag size={18} />{added?'¡Agregado!':`Agregar · ${money(unitTotal * quantity)}`}</button>
       </div>
+      <span className="sr-only" role="status" aria-live="polite">{added?`${product.name} agregado al carrito`:''}</span>
     </div>
   </article>
 }

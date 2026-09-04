@@ -18,7 +18,7 @@ export default function Cart() {
 
   return <main className="page max-w-3xl">
     <header className="flex items-center gap-4"><Link href="/menu" className="grid h-10 w-10 place-items-center rounded-full bg-cande-50"><ArrowLeft size={20} /></Link><div><p className="text-xs font-bold uppercase text-cande-500">Tu selección</p><h1 className="text-2xl font-black">Carrito</h1></div></header>
-    {!items.length ? <section className="mt-20 text-center"><ShoppingBag className="mx-auto text-cande-300" size={52} /><h2 className="mt-5 text-xl font-black">Tu carrito está esperando</h2><p className="mt-2 text-sm text-zinc-500">Agrega una combinación deliciosa para continuar.</p><Link href="/menu" className="mt-6 inline-block rounded-full bg-cande-500 px-6 py-3 font-bold text-white">Explorar menú</Link></section> : <>
+    {!items.length ? <section className="empty-state mt-14"><span className="empty-state-icon"><ShoppingBag size={27}/></span><h2 className="mt-5 text-xl font-black">Tu carrito está esperando</h2><p className="mt-2 text-sm text-zinc-500">Agrega una combinación deliciosa y personalizada para continuar.</p><Link href="/menu" className="mt-6 inline-flex min-h-12 items-center rounded-full bg-cande-500 px-6 font-bold text-white shadow-soft">Ver menú</Link></section> : <>
       <div className="mt-6"><FirstPurchaseGift compact /></div>
       <section className="mt-4 space-y-3">{items.map((item) => {
         const toppingTotal = toppingsUnitTotal(item.toppings)

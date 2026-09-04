@@ -44,10 +44,10 @@ export function Nav() {
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-cande-100 bg-white/95 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 backdrop-blur">
         <div className="mx-auto grid max-w-xl grid-cols-5 md:max-w-3xl">
           {links.map(([href, label, Icon]) => {
-            const active = path === href
+            const active = href === '/' ? path === href : path === href || path.startsWith(`${href}/`)
             return (
-              <Link key={href} href={href} className={`flex min-w-0 flex-col items-center gap-1 py-1 text-[10px] font-bold ${active ? 'text-cande-600' : 'text-zinc-500'}`}>
-                <Icon size={20} strokeWidth={active ? 2.6 : 2} />
+              <Link aria-current={active?'page':undefined} key={href} href={href} className={`relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-2xl py-1 text-[10px] font-bold ${active ? 'text-cande-600' : 'text-zinc-500'}`}>
+                <span className={`grid h-7 min-w-9 place-items-center rounded-full ${active?'bg-cande-100':''}`}><Icon size={19} strokeWidth={active ? 2.7 : 2} /></span>
                 <span>{label}</span>
               </Link>
             )
