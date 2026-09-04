@@ -7,7 +7,7 @@ import {useAuth} from '@/components/auth-provider'
 import {supabase} from '@/lib/supabase'
 import {AdminNotificationHub} from '@/components/admin-notification-hub'
 
-const links=[['/admin','Dashboard'],['/admin/notifications','Avisos'],['/admin/whatsapp','WhatsApp'],['/admin/customers','Clientes'],['/admin/insights','Resumen'],['/admin/expansion','Expansión'],['/admin/store','Productos'],['/admin/homepage','Portada'],['/admin/inventory','Inventario'],['/admin/shipping','Tarifas'],['/admin/promotions','Promociones'],['/admin/rewards','Rewards'],['/admin/referrals','Referidos'],['/admin/drivers','Equipo'],['/admin/delivery','Entregas'],['/admin/delivery/new','+ Pedido externo']]
+const links=[['/admin','Dashboard'],['/admin/notifications','Avisos'],['/admin/whatsapp','WhatsApp'],['/admin/customers','Clientes'],['/admin/strawberries','Fresas 🍓'],['/admin/insights','Resumen'],['/admin/expansion','Expansión'],['/admin/store','Productos'],['/admin/homepage','Portada'],['/admin/inventory','Inventario'],['/admin/shipping','Tarifas'],['/admin/promotions','Promociones'],['/admin/rewards','Rewards'],['/admin/referrals','Referidos'],['/admin/drivers','Equipo'],['/admin/delivery','Entregas'],['/admin/delivery/new','+ Pedido externo']]
 
 export default function AdminLayout({children}:{children:React.ReactNode}){
  const{user,loading,refreshProfile,signOut}=useAuth(),pathname=usePathname(),[identifier,setIdentifier]=useState(''),[password,setPassword]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),role=user?.app_metadata?.role
